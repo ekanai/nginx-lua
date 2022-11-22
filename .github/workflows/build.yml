@@ -1,0 +1,70 @@
+name: Terraform
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # JST 14:00 every tuesday
+    #         ┌───────────── minute (0 - 59)
+    #         │ ┌───────────── hour (0 - 23)
+    #         │ │ ┌───────────── day of the month (1 - 31)
+    #         │ │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │ │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         │ │ │ │ │
+    #         │ │ │ │ │
+    #         │ │ │ │ │
+    #         * * * * *
+    - cron:  '0 5 * * 2'
+
+permissions:
+  actions: read
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Nginx
+        uses: actions/checkout@v3
+        with:
+          repository: nginxinc/docker-nginx
+          path: docker-nginx
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: arm64
+
+      - name: Version
+        id: version
+        run: |
+          VERSION=$(cat mainline/alpine/Dockerfile | grep "ENV NGINX_VERSION" | sed -e "s/.* //g")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        working-directory: docker-nginx
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v3
+        with:
+          context: docker-nginx/modules
+          file: docker-nginx/modules/Dockerfile.alpine
+          platforms: linux/arm64
+          build-args: |
+            ENABLED_MODULES=ndk lua
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/nginx-lua:${{ steps.version.outputs.version }}-alpine-arm64
+          cache-from: type=gha,scope=nginx-lua-arm64
+          cache-to: type=gha,mode=max,scope=nginx-lua-arm64
