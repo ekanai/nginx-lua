@@ -68,3 +68,12 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/nginx-lua:${{ steps.version.outputs.version }}-alpine-arm64
           cache-from: type=gha,scope=nginx-lua-arm64
           cache-to: type=gha,mode=max,scope=nginx-lua-arm64
+
+      - uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          author_name: ${{ github.repository }}
+          status: ${{ job.status }}
+          fields: repo,ref
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
