@@ -46,7 +46,7 @@ jobs:
       - name: Version
         id: version
         run: |
-          VERSION=$(cat mainline/alpine/Dockerfile | grep "ENV NGINX_VERSION" | sed -e "s/.* //g")
+          VERSION=$(cat update.sh | grep "declare -A nginx=(" -3 | grep mainline | sed -e "s/.*='//g" | sed -e "s/'//")
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
         working-directory: docker-nginx
 
