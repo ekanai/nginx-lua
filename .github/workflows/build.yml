@@ -15,7 +15,7 @@ on:
     #         │ │ │ │ │
     #         │ │ │ │ │
     #         * * * * *
-    - cron:  '0 5 * * 2'
+    - cron:  '0 5 * * *'
 
 permissions:
   actions: read
@@ -27,6 +27,11 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+
+    matrix:
+      arc:
+        - amd64
+        - arm64
 
     steps:
       - name: Checkout Nginx
@@ -41,7 +46,7 @@ jobs:
       - name: QEMU
         uses: docker/setup-qemu-action@v2
         with:
-          platforms: arm64
+          platforms: ${{ matrix.arc }}
 
       - name: Version
         id: version
@@ -61,13 +66,13 @@ jobs:
         with:
           context: docker-nginx/modules
           file: docker-nginx/modules/Dockerfile.alpine
-          platforms: linux/arm64
+          platforms: linux/${{ matrix.arc }}
           build-args: |
             ENABLED_MODULES=ndk lua
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/nginx-lua:${{ steps.version.outputs.version }}-alpine-arm64
-          cache-from: type=gha,scope=nginx-lua-arm64
-          cache-to: type=gha,mode=max,scope=nginx-lua-arm64
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/nginx-lua:${{ steps.version.outputs.version }}-alpine-${{ matrix.arc }}
+          cache-from: type=gha,scope=nginx-lua-${{ matrix.arc }}
+          cache-to: type=gha,mode=max,scope=nginx-lua-${{ matrix.arc }}
 
       - uses: 8398a7/action-slack@v3
         if: always()
