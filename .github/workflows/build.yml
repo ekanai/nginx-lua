@@ -39,7 +39,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         id: quem
         with:
           platforms: linux/amd64,linux/arm64
